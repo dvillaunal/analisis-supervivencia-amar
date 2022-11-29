@@ -1,0 +1,802 @@
+---
+title: "Tablas de Proporciones"
+output:
+  html_document: default
+  pdf_document: default
+editor_options:
+  chunk_output_type: console
+---
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+#install.packages("expss")
+#install.packages("qwraps2")
+# Librerias Necesarias:
+library(janitor)
+library(readxl) # Leer ficheros excel
+library(magrittr) 
+library(tidyverse) 
+library(qwraps2)
+# define the markup language we are working in.
+#options(qwraps2_markup = "latex") #is also supported.
+options(qwraps2_markup = "markdown")
+# library(expss)
+# library(psych)
+```
+
+
+
+```{r message=FALSE, warning=FALSE}
+# Lectura de de la base de datos:
+demo <- read_excel("AMAR-DataBase-3-2021 .xlsx", 
+    sheet = "Demographics", n_max = 210)
+
+demo %<>% clean_names()
+
+
+# Lectura de una segunda base de datos para tomar solo 2 columnas:
+baseline <- read_excel("AMAR-DataBase-3-2021 .xlsx", 
+    sheet = "Baseline data", range = "B1:C210")
+```
+
+
+```{r}
+# Conversión de la Variable treat:
+treat <- baseline %>% select(paste0("TREAT",c(1,2))) %>% mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("TREAT",c(1,2)), names_to = "TREAT") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+```
+
+
+**Dimensiones correctas**
+
+```{r}
+dim(demo)
+```
+
+
+```{r eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+# Buscador de Concidencias:
+str_detect(names(demo),"ca") %>% table()
+```
+
+
+Con la metadata del archivo: "**AMAR-CODES(2021)-1.pdf**" tenemos acceso a la identificación de cada columna como una respuesta de una pregunta por lo que convertiremos la base de datos a formato `tiddy`.
+
+```{r include=FALSE}
+# Conversión de la Variable GENDER:
+gender <- demo %>% select(paste0("gender",c(1,2,77))) %>% mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("gender",c(1,2,77)), names_to = "gender") %>% filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+
+# Conversión de la Variable ETHG:
+ethg <- demo %>% select(paste0("ethg",1:6)) %>% mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("ethg",1:6), names_to = "ethg") %>% filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+
+# Conversión de la Variable CCBR:
+ccbr <- demo %>% select(paste0("ccbr",c(1:31))) %>%
+                         mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("ccbr",c(1:31)), names_to = "ccbr") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+
+# Conversión de la Variable CA (Edad):
+ca <- demo %>% select(paste0("ca",c(5:11,99))) %>%
+                         mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("ca",c(5:11,99)), names_to = "ca") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+ca <- ca[-c(70:71)]
+
+# Conversión de la Variable langc:
+langc <- demo %>% select(paste0("langc",c(1:22))) %>%
+                         mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("langc",c(1:22)), names_to = "langc") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+
+# Conversión de la Variable nop:
+nop <- demo %>% select(paste0("nop",c(1:2))) %>%
+                         mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("nop",c(1:2)), names_to = "nop") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+# Conversión de la Variable hctg:
+hctg <- demo %>% select(paste0("hctg",c(1:5,0,77))) %>%
+                         mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("hctg",c(1:5,0,77)), names_to = "hctg") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+
+# Conversión de la Variable vdoy:
+vdoy <- demo %>% select(paste0("vdoy",c(1,2,0))) %>%
+                         mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("vdoy",c(1,2,0)), names_to = "vdoy") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+
+# Conversión de la Variable chg:
+chg <- demo %>% select(paste0("chg",c(1:5,0,77))) %>%
+                         mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("chg",c(1:5,0,77)), names_to = "chg") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+
+# Conversión de la Variable insr:
+insr <- demo %>% select(paste0("insr",c(1,2,77,0))) %>%
+                         mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("insr",c(1,2,77,0)), names_to = "insr") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+
+# Conversión de la Variable cadc:
+cadc <- demo %>% select(paste0("cadc",c(1:8,0,77,98,99))) %>%
+                         mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("cadc",c(1:8,0,77,98,99)), names_to = "cadc") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+
+# Conversión de la Variable rcdc:
+rcdc <- demo %>% select(paste0("rcdc",c(1,2,0,77,98,99))) %>%
+                         mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("rcdc",c(1,2,0,77,98,99)), names_to = "rcdc") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+
+# Conversión de la Variable thd:
+thd <- demo %>% select(paste0("thd",c(1:6,0,77,98))) %>%
+                         mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("thd",c(1:6,0,77,98)), names_to = "thd") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+
+# Conversión de la Variable octb:
+octb <- demo %>% select(paste0("octb",c(1:5,0,77))) %>%
+                         mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("octb",c(1:5,0,77)), names_to = "octb") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+
+# Conversión de la Variable bft:
+bft <- demo %>% select(paste0("bft",c(1,2,0,77))) %>%
+                         mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("bft",c(1,2,0,77)), names_to = "bft") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+
+# Conversión de la Variable tbfs:
+tbfs <- demo %>% select(paste0("tbfs",c(1:4,0,77))) %>%
+                         mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("tbfs",c(1:4,0,77)), names_to = "tbfs") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+
+# Conversión de la Variable tdbb:
+tdbb <- demo %>% select(paste0("tdbb",c(1:3,0,77))) %>%
+                         mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("tdbb",c(1:3,0,77)), names_to = "tdbb") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+
+# Conversión de la Variable eatsf:
+eatsf <- demo %>% select(paste0("eatsf",c(1:7,0,77))) %>%
+                         mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("eatsf",c(1:7,0,77)), names_to = "eatsf") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+
+# Conversión de la Variable phgt:
+phgt <- demo %>% select(paste0("phgt",c(1:5,0,77))) %>%
+                         mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("phgt",c(1:5,0,77)), names_to = "phgt") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+
+# Conversión de la Variable phg:
+phg <- demo %>% select(paste0("phg",c(1:5,0,77))) %>%
+                         mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("phg",c(1:5,0,77)), names_to = "phg") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+
+
+# Conversión de la Variable hri:
+hri <- demo %>% select(paste0("hri",c(1:5,0,77))) %>%
+                         mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("hri",c(1:5,0,77)), names_to = "hri") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+
+# Conversión de la Variable hotb:
+hotb <- demo %>% select(paste0("hotb",c(1:5,99))) %>%
+                         mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("hotb",c(1:5,99)), names_to = "hotb") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+
+# Conversión de la Variable spl:
+spl <- demo %>% select(paste0("spl",c(1:27))) %>%
+                         mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("spl",c(1:27)), names_to = "spl") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+
+# Conversión de la Variable es:
+es <- demo %>% select(paste0("es",c(1:9,77))) %>%
+                         mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("es",c(1:9,77)), names_to = "es") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+
+# Conversión de la Variable ciff:
+ciff <- demo %>% select(paste0("ciff",c(1:2,0,77))) %>%
+                         mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("ciff",c(1:2,0,77)), names_to = "ciff") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+
+# Conversión de la Variable pmw:
+pmw <- demo %>% select(paste0("pmw",c(1:4,99,0,97))) %>%
+                         mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("pmw",c(1:4,99,0,97)), names_to = "pmw") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+```
+
+
+```{r include=FALSE}
+# Ajuste de pmw:
+pmw %<>% append(.,5,88)
+
+for (i in 1:209){
+  if(pmw[i] == "99"){
+    pmw[i] <- "77"
+  }else{
+    pmw[i] <- pmw[i]
+  }
+}
+```
+
+
+
+Ensamble de la base de datos:
+
+```{r}
+db <- cbind(treat,gender,ethg,ccbr, ca, langc, nop, hctg, vdoy,
+            rcdc,chg,insr, cadc, thd, octb, bft, tbfs,tdbb,
+            eatsf,phgt, phg, hotb, spl, hri, es, ciff,pmw) %>% as_tibble()
+```
+
+
+Convertir a factor las variables para reproducir resultados esperados
+
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+db$treat %<>% factor()
+db$gender %<>% factor(.,levels = c(1,2))
+db$ethg %<>% factor(., levels = c(1:6,0,77))
+db$ccbr %<>%  factor(., levels = 1:31)
+db$ca %<>% factor(.,levels = c(5:11,0,77))
+db$langc %<>% factor(., levels = 1:22)
+db$nop %<>% factor()
+db$hctg %<>% factor(., levels = c(1:5,0,77))
+db$vdoy %<>% factor(.,levels = c(1,2,0))
+db$chg %<>% factor(., levels = c(1:5,0,77))
+db$insr %<>% factor(., levels = c(1,2,0,77))
+db$cadc %<>% factor(., levels = c(1:8,0,77,98,99))
+db$rcdc %<>% factor(., levels = c(1,2,0,77,98,99))
+db$thd %<>% factor(., levels = c(1:6,0,77,98))
+db$octb %<>% factor(., levels = c(1:5,0,77))
+db$bft %<>% factor(., levels = c(1,2,0,77))
+db$tbfs %<>% factor(., levels = c(1:4,0,77))
+db$tdbb %<>% factor(., levels = c(1:5, 0))
+db$eatsf %<>% factor(., levels = c(1:7,0,77))
+db$phgt %<>% factor(., levels = c(1:5,0,77))
+db$phg %<>% factor(., levels = c(1:5,0,77))
+db$hri %<>% factor(., levels = c(1:5,0,77))
+db$hotb %<>% factor(.)
+db$spl %<>% factor(., levels = 1:27)
+db$es %<>% factor(., levels = c(1:9,77))
+db$ciff %<>% factor(., levels = c(1:3,0))
+db$pmw %<>% factor(., levels = c(1:5,77,97,0))
+```
+
+
+
+
+```{r}
+ALL <- db
+save(ALL, file = "table1_ALL.RData")
+rm(list = ls())
+load("table1_ALL.RData")
+attach(ALL)
+```
+
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+our_summary <-
+  list("Sex of  child" =
+         list("male" = ~ qwraps2::n_perc0(gender == 1, show_symbol = T,
+                                          digits = 1),
+              "female"  = ~ qwraps2::n_perc0(gender == 2, show_symbol = T,
+                                          digits = 1)),
+       "Ethnic group" =
+         list("Caucasian" = ~ qwraps2::n_perc0(ethg == 1, show_symbol = T,
+                                          digits = 1),
+              "Asian"  = ~ qwraps2::n_perc0(ethg == 2, show_symbol = T,
+                                          digits = 1),
+              "African"  = ~ qwraps2::n_perc0(ethg == 3, show_symbol = T,
+                                          digits = 1),
+              "Latino"  = ~ qwraps2::n_perc0(ethg == 4, show_symbol = T,
+                                          digits = 1),
+              "Other"  = ~ qwraps2::n_perc0(ethg == 5, show_symbol = T,
+                                          digits = 1),
+              "Caucasian/Asian"  = ~ qwraps2::n_perc0(ethg == 6, show_symbol = T,
+                                                      digits = 1)),
+       "Country of child’s birth" =
+         list("USA" = ~ qwraps2::n_perc0(ccbr == 1, show_symbol = T,
+                                          digits = 1),
+              "China"  = ~ qwraps2::n_perc0(ccbr == 2, show_symbol = T,
+                                          digits = 1),
+              "Korea"  = ~ qwraps2::n_perc0(ccbr == 3, show_symbol = T,
+                                          digits = 2),
+              "Mongolia"  = ~ qwraps2::n_perc0(ccbr == 11, show_symbol = T,
+                                          digits = 2),
+              "Mexico"  = ~ qwraps2::n_perc0(ccbr == 12, show_symbol = T,
+                                          digits = 1),
+              "Guatemala"  = ~ qwraps2::n_perc0(ccbr == 13, show_symbol = T,
+                                          digits = 1),
+              "El Salvador" = ~ qwraps2::n_perc0(ccbr == 14, show_symbol = T,
+                                          digits = 1),
+              "Honduras" = ~ qwraps2::n_perc0(ccbr == 16, show_symbol = T,
+                                          digits = 1),
+              "Nicaragua" = ~ qwraps2::n_perc0(ccbr == 17, show_symbol = T,
+                                          digits = 2)),
+       "Child’s age (years)" =
+         list("5" = ~ qwraps2::n_perc0(ca == 5, show_symbol = T,
+                                          digits = 1),
+              "6"  = ~ qwraps2::n_perc0(ca == 6, show_symbol = T,
+                                          digits = 1),
+              "7"  = ~ qwraps2::n_perc0(ca == 7, show_symbol = T,
+                                          digits = 1),
+              "8"  = ~ qwraps2::n_perc0(ca == 8, show_symbol = T,
+                                          digits = 1),
+              "9"  = ~ qwraps2::n_perc0(ca == 9, show_symbol = T,
+                                          digits = 1),
+              "10"  = ~ qwraps2::n_perc0(ca == 10, show_symbol = T,
+                                          digits = 1),
+              "11" = ~ qwraps2::n_perc0(ca == 11, show_symbol = T,
+                                          digits = 1)),
+       "Language the child speaks" =
+         list("English" = ~ qwraps2::n_perc0(langc == 1, show_symbol = T,
+                                          digits = 1),
+              "Spanish"  = ~ qwraps2::n_perc0(langc == 2, show_symbol = T,
+                                          digits = 1),
+              "Cantonese"  = ~ qwraps2::n_perc0(langc == 3, show_symbol = T,
+                                          digits = 1),
+              "Mongolian"  = ~ qwraps2::n_perc0(langc == 10, show_symbol = T,
+                                          digits = 2),
+              "Other"  = ~ qwraps2::n_perc0(langc == 14, show_symbol = T,
+                                          digits = 2),
+              "English/Spanish"  = ~ qwraps2::n_perc0(langc == 15, show_symbol = T,
+                                          digits = 1),
+              "English/Cantonese"  = ~ qwraps2::n_perc0(langc == 16,
+                                                        show_symbol = T,
+                                                        digits = 1),
+              "Cantonese/Mandarin"  = ~ qwraps2::n_perc0(langc == 17,
+                                                        show_symbol = T,
+                                                        digits = 2),
+              "English/Tagalog"  = ~ qwraps2::n_perc0(langc == 19,
+                                                      show_symbol = T,
+                                                      digits = 2),
+              "English/Karen"  = ~ qwraps2::n_perc0(langc == 20,
+                                                    show_symbol = T,
+                                                    digits = 2),
+              "English/Mandarin"  = ~ qwraps2::n_perc0(langc == 21,
+                                                       show_symbol = T,
+                                                       digits = 2),
+              "English/Hmong"  = ~ qwraps2::n_perc0(langc == 22,
+                                                    show_symbol = T,
+                                                    digits = 2)),
+       "New or old patients" =
+         list("New" = ~ qwraps2::n_perc0(nop == 1, show_symbol = T,
+                                         digits = 2),
+              "Old"  = ~ qwraps2::n_perc0(nop == 2, show_symbol = T,
+                                          digits = 2)),
+       "Health of child’s teeth and gums" =
+         list("Excellent" = ~ qwraps2::n_perc0(hctg == 1, show_symbol = T,
+                                               digits = 2),
+              "Very good"  = ~ qwraps2::n_perc0(hctg == 2, show_symbol = T,
+                                               digits = 2),
+              "Good" = ~ qwraps2::n_perc0(hctg == 3, show_symbol = T,
+                                               digits = 2),
+              "Fair" = ~ qwraps2::n_perc0(hctg == 4, show_symbol = T,
+                                               digits = 2),
+              "Poor" = ~ qwraps2::n_perc0(hctg == 5, show_symbol = T,
+                                               digits = 2),
+              "Don’t know" = ~ qwraps2::n_perc0(hctg == 0, show_symbol = T,
+                                               digits = 2)),
+       "Does your child visit the dentist at least once a year?" =
+         list("Yes" = ~ qwraps2::n_perc0(vdoy == 1, show_symbol = T,
+                                               digits = 2),
+              "No" = ~ qwraps2::n_perc0(vdoy == 2, show_symbol = T,
+                                               digits = 2),
+              "Don’t know" = ~ qwraps2::n_perc0(vdoy == 0, show_symbol = T,
+                                               digits = 2)),
+       "Did your child receive dental care for caries within the past year?" =
+         list("Yes" = ~ qwraps2::n_perc0(rcdc == 1, show_symbol = T,
+                                             digits = 2),
+              "No" = ~ qwraps2::n_perc0(rcdc == 2, show_symbol = T,
+                                             digits = 2),
+              "Don’t know" = ~ qwraps2::n_perc0(rcdc == 0, show_symbol = T,
+                                             digits = 2),
+              "Skipped" = ~ qwraps2::n_perc0(rcdc == 98, show_symbol = T,
+                                             digits = 2),
+              "Missing" = ~ qwraps2::n_perc0(rcdc == 99,
+                                             show_symbol = T, digits = 2)),
+       "Child’s health in general" =
+         list("Excellent" = ~ qwraps2::n_perc0(chg == 1, show_symbol = T,
+                                               digits = 2),
+              "Very good"  = ~ qwraps2::n_perc0(chg == 2, show_symbol = T,
+                                                digits = 2),
+              "Good" = ~ qwraps2::n_perc0(chg == 3, show_symbol = T, digits = 2),
+              "Fair" = ~ qwraps2::n_perc0(chg == 4, show_symbol = T, digits = 2),
+              "Poor" = ~ qwraps2::n_perc0(chg == 5, show_symbol = T,
+                                               digits = 2),
+              "Don’t know" = ~ qwraps2::n_perc0(chg == 0, show_symbol = T,
+                                                digits = 1)),
+       "Any insurance that pays for all or part child’s care" =
+         list("Yes" = ~ qwraps2::n_perc0(insr == 1, show_symbol = T,
+                                               digits = 2),
+              "No" = ~ qwraps2::n_perc0(insr == 2, show_symbol = T,
+                                               digits = 2),
+              "Don’t know" = ~ qwraps2::n_perc0(insr == 0, show_symbol = T,
+                                               digits = 2)),
+       "How old was your child when he/she first saw someone for dental care?" =
+         list("1 years old" = ~ qwraps2::n_perc0(cadc == 1, show_symbol = T,
+                                          digits = 1),
+              "2 years old" = ~ qwraps2::n_perc0(cadc == 2, show_symbol = T,
+                                          digits = 1),
+              "3 years old" = ~ qwraps2::n_perc0(cadc == 3, show_symbol = T,
+                                          digits = 1),
+              "4 years old" = ~ qwraps2::n_perc0(cadc == 4, show_symbol = T,
+                                          digits = 1),
+              "5 years old" = ~ qwraps2::n_perc0(cadc == 5, show_symbol = T,
+                                          digits = 1),
+              "6 years old" = ~ qwraps2::n_perc0(cadc == 6, show_symbol = T,
+                                          digits = 1),
+              "Older than 6" = ~ qwraps2::n_perc0(cadc == 7, show_symbol = T,
+                                          digits = 1),
+              "Don't know" = ~ qwraps2::n_perc0(cadc == 0, show_symbol = T,
+                                          digits = 1)),
+       "Transportation used from your home to your child’s dentist" =
+         list("Drive" = ~ qwraps2::n_perc0(thd == 1, show_symbol = T,
+                                          digits = 1),
+              "Am Drive" = ~ qwraps2::n_perc0(thd == 2, show_symbol = T,
+                                          digits = 1),
+              "Bus, train other public transport" = ~ qwraps2::n_perc0(thd == 3,
+                                                             show_symbol = T,
+                                                             digits = 1),
+              "Taxi" = ~ qwraps2::n_perc0(thd == 4, show_symbol = T,
+                                          digits = 1),
+              "Walk" = ~ qwraps2::n_perc0(thd == 5, show_symbol = T,
+                                          digits = 1),
+              "None" = ~ qwraps2::n_perc0(thd == 6, show_symbol = T,
+                                          digits = 1),
+              "Don't know" = ~ qwraps2::n_perc0(thd == 0, show_symbol = T,
+                                          digits = 1)),
+       "How often are your child’s teeth brushed" =
+         list("Never" = ~ qwraps2::n_perc0(octb == 1, show_symbol = T,
+                                               digits = 2),
+              "Sometimes, but not every day"  = ~ qwraps2::n_perc0(octb == 2,
+                                                                   show_symbol = T,
+                                                                   digits = 2),
+              "Once a day" = ~ qwraps2::n_perc0(octb == 3,show_symbol = T,
+                                                digits = 2),
+              "Twice a day" = ~ qwraps2::n_perc0(octb == 4,
+                                                 show_symbol = T, digits = 2),
+              "More than twice a day" = ~ qwraps2::n_perc0(octb == 5,
+                                                           show_symbol = T,
+                                                           digits = 2)),
+       "Is fluoride paste used for your child during brushing?" =
+         list("Yes" = ~ qwraps2::n_perc0(bft== 1, show_symbol = T,
+                                               digits = 2),
+              "No"  = ~ qwraps2::n_perc0(bft == 2,show_symbol = T,
+                                         digits = 2),
+              "Don't Know" = ~ qwraps2::n_perc0(bft == 0,show_symbol = T,
+                                                digits = 2)),
+       "Number of times child brushes teeth before sleep during last week" =
+         list("0 times (never)" = ~ qwraps2::n_perc0(tbfs == 1, show_symbol = T,
+                                               digits = 2),
+              "1-3 times"  = ~ qwraps2::n_perc0(tbfs == 2,show_symbol = T,
+                                         digits = 2),
+              "4-6 times" = ~ qwraps2::n_perc0(tbfs == 3,show_symbol = T,
+                                                digits = 2),
+              "7 times (every day)" = ~ qwraps2::n_perc0(tbfs == 4,show_symbol = T,
+                                                digits = 2),
+              "Don't Know" = ~ qwraps2::n_perc0(tbfs == 0,show_symbol = T,
+                                                digits = 2)),
+       "Number of times during your child eats or drinks before going to bed" =
+         list("0 times (never)" = ~ qwraps2::n_perc0(tdbb == 1, show_symbol = T,
+                                               digits = 2),
+              "1-3 times"  = ~ qwraps2::n_perc0(tdbb == 2,show_symbol = T,
+                                         digits = 2),
+              "4-6 times" = ~ qwraps2::n_perc0(tdbb == 3,show_symbol = T,
+                                                digits = 2),
+              "Don't Know" = ~ qwraps2::n_perc0(tdbb == 4,show_symbol = T,
+                                                digits = 2)),
+       "Eat sweet or sugary food" =
+         list("Rarely or never" = ~ qwraps2::n_perc0(eatsf == 1, show_symbol = T,
+                                               digits = 2),
+              "At least once a week, but not every day" = ~ qwraps2::n_perc0(
+                eatsf == 2, show_symbol = T, digits = 2),
+              "Once a day" = ~ qwraps2::n_perc0(eatsf == 3, show_symbol = T,
+                                               digits = 2),
+              "Twice a day" = ~ qwraps2::n_perc0(eatsf == 4, show_symbol = T,
+                                               digits = 2),
+              "Three times a day" = ~ qwraps2::n_perc0(eatsf == 5, show_symbol = T,
+                                               digits = 2),
+              "Four times a day" = ~ qwraps2::n_perc0(eatsf == 6, show_symbol = T,
+                                               digits = 2),
+              "Five or more times a day" = ~ qwraps2::n_perc0(eatsf == 7,
+                                                              show_symbol = T,
+                                                              digits = 2),
+              "Don’t know" = ~ qwraps2::n_perc0(eatsf == 0, show_symbol = T,
+                                               digits = 2)),
+       "Parent’s health of gums and teeth" =
+         list("Excellent" = ~ qwraps2::n_perc0(phgt == 1, show_symbol = T,
+                                               digits = 2),
+              "Very good"  = ~ qwraps2::n_perc0(phgt == 2, show_symbol = T,
+                                               digits = 2),
+              "Good" = ~ qwraps2::n_perc0(phgt == 3, show_symbol = T,
+                                               digits = 2),
+              "Fair" = ~ qwraps2::n_perc0(phgt == 4, show_symbol = T,
+                                               digits = 2),
+              "Poor" = ~ qwraps2::n_perc0(phgt == 5, show_symbol = T,
+                                               digits = 2),
+              "Don’t know" = ~ qwraps2::n_perc0(phgt == 0, show_symbol = T,
+                                               digits = 2)),
+       "Parent’s health in general" =
+         list("Excellent" = ~ qwraps2::n_perc0(phg == 1, show_symbol = T,
+                                               digits = 2),
+              "Very good"  = ~ qwraps2::n_perc0(phg == 2, show_symbol = T,
+                                               digits = 2),
+              "Good" = ~ qwraps2::n_perc0(phg == 3, show_symbol = T,
+                                               digits = 2),
+              "Fair" = ~ qwraps2::n_perc0(phg == 4, show_symbol = T,
+                                               digits = 2),
+              "Poor" = ~ qwraps2::n_perc0(phg == 5, show_symbol = T,
+                                               digits = 2),
+              "Don’t know" = ~ qwraps2::n_perc0(phg == 0, show_symbol = T,
+                                               digits = 2)),
+       "Occurrence of parent brushing their teeth" =
+         list("Never" = ~ qwraps2::n_perc0(hotb == 1, show_symbol = T,
+                                               digits = 2),
+              "Sometimes, but not every day"  = ~ qwraps2::n_perc0(hotb == 2,
+                                                                   show_symbol = T,
+                                                                   digits = 2),
+              "Once a day" = ~ qwraps2::n_perc0(hotb == 3,show_symbol = T,
+                                                digits = 2),
+              "Twice a day" = ~ qwraps2::n_perc0(hotb == 4,
+                                                 show_symbol = T, digits = 2),
+              "More than twice a day" = ~ qwraps2::n_perc0(hotb == 5,
+                                                           show_symbol = T,
+                                                           digits = 2)),
+       "Languages spoken of parent" =
+         list("English" = ~ qwraps2::n_perc0(spl == 1, show_symbol = T,
+                                          digits = 1),
+              "Spanish"  = ~ qwraps2::n_perc0(spl == 2, show_symbol = T,
+                                          digits = 1),
+              "Cantonese"  = ~ qwraps2::n_perc0(spl == 3, show_symbol = T,
+                                          digits = 1),
+              "Mandarin"  = ~ qwraps2::n_perc0(spl == 4, show_symbol = T,
+                                          digits = 2),
+              "Other"  = ~ qwraps2::n_perc0(spl == 14, show_symbol = T,
+                                          digits = 2),
+              "English/Spanish"  = ~ qwraps2::n_perc0(spl == 15, show_symbol = T,
+                                          digits = 1),
+              "English/Mongolian"  = ~ qwraps2::n_perc0(spl == 16,
+                                                        show_symbol = T,
+                                                        digits = 1),
+              "English/Cantonese"  = ~ qwraps2::n_perc0(spl == 17,
+                                                        show_symbol = T,
+                                                        digits = 2),
+              "Cantonese/Mandarin"  = ~ qwraps2::n_perc0(spl == 18,
+                                                      show_symbol = T,
+                                                      digits = 2),
+              "English/Tagalog"  = ~ qwraps2::n_perc0(spl == 19,
+                                                    show_symbol = T,
+                                                    digits = 2),
+              "English/Mongolian"  = ~ qwraps2::n_perc0(spl == 20,
+                                                       show_symbol = T,
+                                                       digits = 2),
+              "English/Cantonese/Mandarin"  = ~ qwraps2::n_perc0(spl == 21,
+                                                    show_symbol = T,
+                                                    digits = 2),
+              "Sign/English"  = ~ qwraps2::n_perc0(spl == 23,
+                                                    show_symbol = T,
+                                                    digits = 2),
+              "English/Laotian"  = ~ qwraps2::n_perc0(spl == 24,
+                                                    show_symbol = T,
+                                                    digits = 2),
+              "English/Hmong"  = ~ qwraps2::n_perc0(spl == 25,
+                                                    show_symbol = T,
+                                                    digits = 2),
+              "English/Choctan"  = ~ qwraps2::n_perc0(spl == 26,
+                                                    show_symbol = T,
+                                                    digits = 2),
+              "English/French"  = ~ qwraps2::n_perc0(spl == 27,
+                                                    show_symbol = T,
+                                                    digits = 2)),
+       "Help in reading instructions" =
+         list("Never" = ~ qwraps2::n_perc0(hri == 1, show_symbol = T,
+                                               digits = 2),
+              "Rarely" = ~ qwraps2::n_perc0(hri == 2, show_symbol = T,
+                                               digits = 2),
+              "Sometimes" = ~ qwraps2::n_perc0(hri == 3, show_symbol = T,
+                                               digits = 2),
+              "Often" = ~ qwraps2::n_perc0(hri == 4, show_symbol = T,
+                                               digits = 2),
+              "Always" = ~ qwraps2::n_perc0(hri == 5, show_symbol = T,
+                                               digits = 2)),
+       "Employment status" =
+         list("Employed 32 hours or more per week" = ~ qwraps2::n_perc0(
+           es == 1, show_symbol = T,digits = 2),
+              "Employed less than 32 hours per week" = ~ qwraps2::n_perc0(
+           es == 2, show_symbol = T,digits = 2),
+           "Full time student" = ~ qwraps2::n_perc0(
+           es == 3, show_symbol = T,digits = 2),
+           "Part time student" = ~ qwraps2::n_perc0(
+           es == 4, show_symbol = T,digits = 2),
+           "Homemaker" = ~ qwraps2::n_perc0(
+           es == 5, show_symbol = T,digits = 2),
+           "Disabled" = ~ qwraps2::n_perc0(
+           es == 6, show_symbol = T,digits = 2),
+           "Retired" = ~ qwraps2::n_perc0(
+           es == 8, show_symbol = T,digits = 2),
+           "Unemployed" = ~ qwraps2::n_perc0(
+           es == 9, show_symbol = T,digits = 2)),
+       "Combined income of family (less than 20 K per year)" =
+         list("Yes" = ~ qwraps2::n_perc0(ciff == 1, show_symbol = T,
+                                               digits = 2),
+              "No"  = ~ qwraps2::n_perc0(ciff  == 2,show_symbol = T,
+                                         digits = 2),
+              "Don't Know" = ~ qwraps2::n_perc0(ciff == 0,show_symbol = T,
+                                                digits = 2)),
+       "Missed work to take your child for dental care" =
+         list("1" = ~ qwraps2::n_perc0(pmw == 1, show_symbol = T,
+                                          digits = 1),
+              "2" = ~ qwraps2::n_perc0(pmw == 2, show_symbol = T,
+                                          digits = 1),
+              "3" = ~ qwraps2::n_perc0(pmw == 3, show_symbol = T,
+                                          digits = 1),
+              "4" = ~ qwraps2::n_perc0(pmw == 4, show_symbol = T,
+                                          digits = 1),
+              "Prefer not to answer" = ~ qwraps2::n_perc0(pmw == 77,
+                                                          show_symbol = T,
+                                                          digits = 1),
+              "Not applicable" = ~ qwraps2::n_perc0(pmw == 97, show_symbol = T,
+                                          digits = 1),
+              "Don’t know" = ~ qwraps2::n_perc0(pmw == 0, show_symbol = T,
+                                          digits = 1))
+)
+```
+
+
+```{r message=FALSE, warning=FALSE}
+chisq.pvalue <- function(x) {
+  value <- stats::chisq.test(x, ALL$treat,
+                                simulate.p.value = F,
+                                correct = F,
+                                rescale.p = F)$p.value
+  return(value)
+}
+
+t <- list()
+for (i in 2:27) {
+  j = i-1
+  t[j] <- ALL[i] %>% as.vector()
+}
+
+pv <- round(sapply(t, chisq.pvalue),3)
+```
+
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+p.vals <- c(pv[1], " ", pv[2], rep(" ", 5), pv[3], rep(" ", 8),
+            pv[4], rep(" ", 6), pv[5], rep(" ", 11), pv[6],
+            " ", pv[7], rep(" ", 5), pv[8], rep(" ", 2), pv[9],
+            rep(" ", 4), pv[10], rep(" ", 5), pv[11],
+            rep(" ", 2), pv[12], rep(" ", 7), pv[13],
+            rep(" ", 6), pv[14], rep(" ", 4), pv[15],
+            rep(" ", 2), pv[16], rep(" ", 4), pv[17],
+            rep(" ", 3), pv[18], rep(" ", 7), pv[19],
+            rep(" ", 5), pv[20], rep(" ", 5), pv[21],
+            rep(" ", 4), pv[22], rep(" ", 16), pv[23],
+            rep(" ", 4), pv[24], rep(" ", 7), pv[25],
+            rep(" ", 2), pv[26], rep(" ", 7))
+```
+
+
+```{r message=FALSE}
+ALL$treat %<>% factor(., labels = c("ART", "Amalgam"))
+
+by_cyl1 <- summary_table(dplyr::group_by(ALL, treat), our_summary[1:7])
+whole1 <- summary_table(ALL,our_summary[1:7])
+
+both1 <- cbind(whole1, by_cyl1)
+
+both1 <- cbind(both1, "P-Value" = p.vals[1:44])
+
+by_cyl2 <- summary_table(dplyr::group_by(ALL, treat), 
+                         our_summary[8:14])
+whole2 <- summary_table(ALL,our_summary[8:14])
+
+both2 <- cbind(whole2, by_cyl2)
+
+both2 <- cbind(both2, "P-Value" = p.vals[45:81])
+
+by_cyl3 <- summary_table(dplyr::group_by(ALL, treat), our_summary[15:21])
+whole3 <- summary_table(ALL,our_summary[15:21])
+
+both3 <- cbind(whole3, by_cyl3)
+
+both3 <- cbind(both3, "P-Value" = p.vals[82:118])
+
+by_cyl4 <- summary_table(dplyr::group_by(ALL, treat), our_summary[22:26])
+whole4 <- summary_table(ALL,our_summary[22:26])
+
+both4 <- cbind(whole4, by_cyl4)
+
+both4 <- cbind(both4, "P-Value" = p.vals[119:158])
+```
+
+# Tabla 1:
+
+```{r, results='asis'}
+both1
+```
+
+\newpage
+
+```{r, results='asis'}
+both2
+```
+
+\newpage
+
+```{r, results='asis'}
+both3
+```
+
+\newpage
+
+```{r, results='asis'}
+both4
+```

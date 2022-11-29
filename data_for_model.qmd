@@ -1,0 +1,847 @@
+---
+title: "Data for Model"
+author: "Daniel Villa"
+date: "`r Sys.Date()`"
+format:
+  html:
+    self-contained: true
+lang: es
+editor: visual
+execute: 
+  echo: false
+  warning: false
+  cache: true
+editor_options: 
+  chunk_output_type: console
+---
+
+> Nota: dejamos esto como guia o diccionario para un mejor entendimiento de las variables:
+
+# CÓDIGOS DE EVALUACIÓN CLÍNICA.
+
+*(Línea de base, 6 y 12 meses de seguimiento)*
+
+59. Tratamiento (TREAT):
+ART = 1
+Amalgama = 2
+
+60. Número de diente (sistema internacional de numeración de dientes) (TOTNO): 
+54 = 1-A
+55 = 2-B
+64 = 3-I
+65 = 4-J
+74 = 5-K
+75 = 6-L
+84 = 7-S
+85 = 8-T 
+
+61. Tipo de mandíbula (TYOJ):
+Maxilar = 1
+Mandíbula = 2
+
+62. Profundidad de la lesión dental (TLD):
+Tercio medio de la dentina = 1
+Tercio interno de la dentina = 2
+Tercio externo de la dentina = 3
+
+64. Tipo de restauración (RESTT):
+Oclusal = 1
+Mesio-oclusal = 2
+Disto-oclusal = 3
+Mesial = 4
+Distal = 5
+Mesio-oclusal-distal = 6
+Oclusal-lingual = 7
+Oclusal-bucal = 8
+Bucal= 9 
+Oclusal-lingual-distal = 10
+Mesio-oclusal- bucal = 11
+
+
+65. Experiencia de sensibilidad (SENSE) (Caras Wong- Baker):
+Cara 0 = 1
+Cara 1 = 2
+Cara 2 = 3
+Cara 3 = 4
+Cara 4 = 5
+Cara 5 = 6
+
+66. Radiografía (RX):
+Sí = 1
+No = 2
+
+67. Adaptación marginal (MARGA):
+ Bien adaptado = 1
+ Brecha en la hendidura marginal, dentina no visible = 2
+ Restauración fracturada o perdida = 3
+
+68. Forma anatómica (ANATF):
+Restauración continua con la anatomía del diente existente = 1
+ Restauración no continua y necesita reemplazo = 2
+
+69. Caries en el margen de la cavosuperficie (CCM):
+No hay caries presente = 1
+Caries presente = 2
+
+Este Documento tiene la finalidad de Organizar, limpiar las BD de AMAR,
+además proponer un modelo de supervivencia para poner en términos estadísticos
+la supervivencia de los ciclos de vida de la Amalgama vs ART.
+
+```{r}
+# Librerias Necesarias:
+library(tidyverse)
+library(magrittr)
+library(janitor)
+library(readxl)
+library(R.utils)
+```
+
+```{r message=FALSE, warning=FALSE}
+# Lectura de de la base de datos:
+uno <- read_excel("AMAR-DataBase-3-2021 .xlsx", 
+    sheet = "Baseline data", n_max = 210)
+
+fecha_inicial <- uno[,1] %>% as.data.frame()
+uno <- uno[,-1]
+uno %<>% clean_names()
+
+# 6 meses
+
+seis <- read_excel("AMAR-DataBase-3-2021 .xlsx", 
+    sheet = "6months", n_max = 210)
+
+seis <- seis[,-1]
+seis %<>% clean_names()
+
+
+doce <- read_excel("AMAR-DataBase-3-2021 .xlsx", 
+    sheet = "12months", n_max = 210)
+
+doce <- doce[,-1]
+doce %<>% clean_names()
+
+
+diezocho <- read_excel("AMAR-DataBase-3-2021 .xlsx", 
+    sheet = "18months", n_max = 210)
+
+diezocho <- diezocho[,-1]
+diezocho %<>% clean_names()
+
+
+veinticuatro <- read_excel("AMAR-DataBase-3-2021 .xlsx", 
+    sheet = "24 months", n_max = 210)
+
+veinticuatro <- veinticuatro[,-1]
+veinticuatro %<>% clean_names()
+
+nombres <- c("uno", "seis", "doce", "diezocho", "veinticuatro")
+n <- c(1,6,12,18,24)
+nvars <- c("treat", "totno", "tyoj", "tld", "restt", "sense",
+           "rx", "marga", "anatf","ccm")
+```
+
+
+```{r}
+# Conversión de la Variable treat:
+treat1 <- uno %>% select(paste0("treat",c(1,2))) %>%
+  mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("treat",c(1,2)), names_to = "treat") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+
+treat6 <- seis %>% select(paste0("treat",c(1,2))) %>%
+  mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("treat",c(1,2)), names_to = "treat") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+treat12 <- doce %>% select(paste0("treat",c(1,2))) %>%
+  mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("treat",c(1,2)), names_to = "treat") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+treat18 <- diezocho %>% select(paste0("treat",c(1,2))) %>%
+  mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("treat",c(1,2)), names_to = "treat") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+
+treat24 <- veinticuatro %>% select(paste0("treat",c(1,2))) %>%
+  mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("treat",c(1,2)), names_to = "treat") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+
+# Conversión de la variable tooth no
+
+totno1 <- uno %>% select(paste0("totno",c(1:8))) %>%
+  mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("totno",c(1:8)), names_to = "totno") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+
+totno6 <- seis %>% select(paste0("totno",c(1:8))) %>%
+  mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("totno",c(1:8)), names_to = "totno") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+totno12 <- doce %>% select(paste0("totno",c(1:8))) %>%
+  mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("totno",c(1:8)), names_to = "totno") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+totno18 <- diezocho %>% select(paste0("totno",c(1:8))) %>%
+  mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("totno",c(1:8)), names_to = "totno") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+
+totno24 <-  veinticuatro %>% select(paste0("totno",c(1:8))) %>%
+  mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("totno",c(1:8)), names_to = "totno") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+# Conversión de la variable type of jaw:
+
+tyoj1 <- uno %>% select(paste0("tyoj",c(1,2))) %>%
+  mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("tyoj",c(1,2)), names_to = "tyoj") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+tyoj6 <- seis %>% select(paste0("tyoj",c(1,2))) %>%
+  mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("tyoj",c(1,2)), names_to = "tyoj") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+
+tyoj12 <- doce %>% select(paste0("tyoj",c(1,2))) %>%
+  mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("tyoj",c(1,2)), names_to = "tyoj") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+
+tyoj18 <- diezocho %>% select(paste0("tyoj",c(1,2))) %>%
+  mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("tyoj",c(1,2)), names_to = "tyoj") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+
+tyoj24 <- veinticuatro %>% select(paste0("tyoj",c(1,2))) %>%
+  mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("tyoj",c(1,2)), names_to = "tyoj") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+# Conversión de la variable Tooth Lesion Depth:
+
+tld1 <- uno %>% select(paste0("tld",c(1,2,3))) %>%
+  mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("tld",c(1,2,3)), names_to = "tld") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+
+tld6 <- seis %>% select(paste0("tld",c(1,2,3))) %>%
+  mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("tld",c(1,2,3)), names_to = "tld") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+
+
+tld12 <- doce %>% select(paste0("tld",c(1,2,3))) %>%
+  mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("tld",c(1,2,3)), names_to = "tld") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+
+tld18 <- diezocho %>% select(paste0("tld",c(1,2,3))) %>%
+  mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("tld",c(1,2,3)), names_to = "tld") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+
+tld24 <- veinticuatro %>% select(paste0("tld",c(1,2,3))) %>%
+  mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("tld",c(1,2,3)), names_to = "tld") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+# Conversión de la variable Restoration Type:
+
+restt1 <- uno %>% select(paste0("restt",c(1:11))) %>%
+  mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("restt",c(1:11)), names_to = "restt") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+
+restt6 <- seis %>% select(paste0("restt",c(1:11))) %>%
+  mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("restt",c(1:11)), names_to = "restt") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+
+
+restt12 <- doce %>% select(paste0("restt",c(1:11))) %>%
+  mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("restt",c(1:11)), names_to = "restt") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+
+restt18 <- diezocho %>% select(paste0("restt",c(1:11))) %>%
+  mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("restt",c(1:11)), names_to = "restt") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+
+restt24 <- veinticuatro %>% select(paste0("restt",c(1:11))) %>%
+  mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("restt",c(1:11)), names_to = "restt") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+# Conversión de la variable Sensitivity Experience:
+
+sense1 <- uno %>% select(paste0("sense",c(1:6))) %>%
+  mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("sense",c(1:6)), names_to = "sense") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+
+sense6 <- seis %>% select(paste0("sense",c(1:6))) %>%
+  mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("sense",c(1:6)), names_to = "sense") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+
+sense12 <- doce %>% select(paste0("sense",c(1:6))) %>%
+  mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("sense",c(1:6)), names_to = "sense") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+
+sense18 <- diezocho %>% select(paste0("sense",c(1:6))) %>%
+  mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("sense",c(1:6)), names_to = "sense") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+
+sense24 <- veinticuatro %>% select(paste0("sense",c(1:6))) %>%
+  mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("sense",c(1:6)), names_to = "sense") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+# Conversión de la variable  Radiograph:
+
+rx1 <- uno %>% select(paste0("rx",c(1,2))) %>%
+  mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("rx",c(1,2)), names_to = "rx") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+
+rx6 <- seis %>% select(paste0("rx",c(1,2))) %>%
+  mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("rx",c(1,2)), names_to = "rx") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+
+rx12 <- doce %>% select(paste0("rx",c(1,2))) %>%
+  mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("rx",c(1,2)), names_to = "rx") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+
+rx18 <- diezocho %>% select(paste0("rx",c(1,2))) %>%
+  mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("rx",c(1,2)), names_to = "rx") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+
+rx24 <- veinticuatro %>% select(paste0("rx",c(1,2))) %>%
+  mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("rx",c(1,2)), names_to = "rx") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+
+# Conversión de la variable Marginal Adaptation:
+
+marga1 <- uno %>% select(paste0("marga",c(1,2,3))) %>%
+  mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("marga",c(1,2,3)), names_to = "marga") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+
+marga6 <- seis %>% select(paste0("marga",c(1,2,3))) %>%
+  mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("marga",c(1,2,3)), names_to = "marga") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+
+marga12 <- doce %>% select(paste0("marga",c(1,2,3))) %>%
+  mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("marga",c(1,2,3)), names_to = "marga") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+
+marga18 <- diezocho %>% select(paste0("marga",c(1,2,3))) %>%
+  mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("marga",c(1,2,3)), names_to = "marga") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+
+marga24 <- veinticuatro %>% select(paste0("marga",c(1,2,3))) %>%
+  mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("marga",c(1,2,3)), names_to = "marga") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% pull() %>% parse_number()
+
+# Conversión de la variable Anatomical Form:
+
+anatf1 <- uno %>% select(paste0("anatf6",c(1,2))) %>%
+  mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("anatf6",c(1,2)), names_to = "anatf") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% gsub("anatf6", "", .) %>%
+  parse(text = .) %>% eval() %>% parse_number()
+
+
+anatf6 <- seis %>% select(paste0("anatf6",c(1,2))) %>%
+  mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("anatf6",c(1,2)), names_to = "anatf") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% gsub("anatf6", "", .) %>%
+  parse(text = .) %>% eval() %>% parse_number()
+
+
+anatf12 <- doce %>% select(paste0("anatf12",c(0,1))) %>%
+  mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("anatf12",c(0,1)), names_to = "anatf") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% gsub("anatf12", "", .) %>%
+  parse(text = .) %>% eval() %>% parse_number() %>%
+  factor(., levels = c(0,1), labels = c(1,2)) %>% as.character() %>% 
+  as.numeric()
+
+
+anatf18 <- diezocho %>% select(paste0("anatf12",c(0,1))) %>%
+  mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("anatf12",c(0,1)), names_to = "anatf") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% gsub("anatf12", "", .) %>%
+  parse(text = .) %>% eval() %>% parse_number() %>%
+  factor(., levels = c(0,1), labels = c(1,2)) %>% as.character() %>% 
+  as.numeric()
+
+
+anatf24 <- veinticuatro %>% select(paste0("anatf12",c(0,1))) %>%
+  mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("anatf12",c(0,1)), names_to = "anatf") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% gsub("anatf12", "", .) %>%
+  parse(text = .) %>% eval() %>% parse_number() %>%
+  factor(., levels = c(0,1), labels = c(1,2)) %>% as.character() %>% 
+  as.numeric()
+
+# Conversión de la variable Caries at cavosurface margin:
+
+ccm1 <- uno %>% select(paste0("ccm6",c(0,1))) %>%
+  mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("ccm6",c(0,1)), names_to = "ccm") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% gsub("ccm6", "", .) %>%
+  parse(text = .) %>% eval() %>% parse_number() %>%
+  factor(., levels = c(0,1), labels = c(1,2)) %>% as.character() %>% 
+  as.numeric()
+
+
+ccm6 <- seis %>% select(paste0("ccm6",c(0,1))) %>%
+  mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("ccm6",c(0,1)), names_to = "ccm") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% gsub("ccm6", "", .) %>%
+  parse(text = .) %>% eval() %>% parse_number() %>%
+  factor(., levels = c(0,1), labels = c(1,2)) %>% as.character() %>% 
+  as.numeric()
+
+
+ccm12 <- doce %>% select(paste0("ccm12",c(0,1))) %>%
+  mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("ccm12",c(0,1)), names_to = "ccm") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% gsub("ccm12", "", .) %>%
+  parse(text = .) %>% eval() %>% parse_number() %>%
+  factor(., levels = c(0,1), labels = c(1,2)) %>% as.character() %>% 
+  as.numeric()
+
+
+ccm18 <- diezocho %>% select(paste0("ccm12",c(0,1))) %>%
+  mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("ccm12",c(0,1)), names_to = "ccm") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% gsub("ccm12", "", .) %>%
+  parse(text = .) %>% eval() %>% parse_number() %>%
+  factor(., levels = c(0,1), labels = c(1,2)) %>% as.character() %>% 
+  as.numeric()
+
+
+ccm24 <- veinticuatro %>% select(paste0("ccm12",c(0,1))) %>%
+  mutate(paciente = row_number()) %>%
+  pivot_longer(col = paste0("ccm12",c(0,1)), names_to = "ccm") %>%
+  filter(value==1) %>%
+  select(c(2)) %>% gsub("ccm12", "", .) %>%
+  parse(text = .) %>% eval() %>% parse_number() %>%
+  factor(., levels = c(0,1), labels = c(1,2)) %>% as.character() %>% 
+  as.numeric()
+```
+
+Ahora una vez tenemos las variables de cada uno de la base de datos procedemos a su comparación de atrás hacia a delante (solo de las variables para el modelo), aun así verificamos que los valores no cambien
+
+
+```{r}
+# Creación del vector con todas las variables
+vars <- c()
+c = 1
+for (i in 1:10) {
+  for (j in 1:5) {
+    vars[c] <- paste0(nvars[i],n[j])
+    c = c +1
+  }
+}
+```
+
+Ahora verificamos que todas las variables tengan la misma longitud para su comparación
+
+```{r}
+falta <- c()
+c = 1
+for (i in 1:10) {
+  for (j in 1:5) {
+    t <- paste0("length(",nvars[i],n[j],")") %>%
+      parse(text = .) %>% eval()
+    if (t != 209){
+      falta[c] <- paste0(nvars[i],n[j]," = ", t)
+      c = c +1
+    }
+  }
+}
+falta
+```
+
+
+Añadimos los valores correspondientes en los datos faltantes para tener la misma longitud
+
+```{r}
+temp <- vars[c(11:20,40,45,50)]
+
+for (i in 1:length(temp)) {
+  t <- paste0("insert(",temp[i],",99)") %>% parse(text = .) %>% eval()
+  assign(temp[i], t)
+}
+rm(temp)
+```
+
+
+
+Comparación entre los meses:
+
+```{r}
+# Creación de matrices de las variables por meses
+for (i in 1:10) {
+  t <- paste0("cbind(",nvars[i],"1,",nvars[i],"6,",nvars[i],
+       "12,",nvars[i],"18,",nvars[i],"24)") %>% parse(text = .) %>% eval()
+  assign(nvars[i], t)
+}
+
+# Diferencias entre las las variables
+for (i in 1:10) {
+  paste0("sum(rowSums(",nvars[i],"==",nvars[i],
+         "[,1])==ncol(",nvars[i],"), na.rm=T) %in% c(209,208)") %>% parse(text = .) %>% 
+    eval() %>% print()
+}
+
+```
+
+Encontramos diferencias significativas en las ultimas variables:
+
++ MARGA
++ ANATF
++ CCM
+
+Por lo que revisaremos que diferencias encontramos y en que meses.
+
+**MARGA**
+
+```{r}
+#### verificación por Meses: ####
+
+# De 1 a 6 meses:
+table(marga1 == marga6)
+
+# De 6 a 12 meses:
+table(marga6 == marga12)
+x = 1*(marga6 != marga12)*1:209
+
+## Pacientes de cambio:
+p6_12.marga <- if(length(which(x==0)!=0)) x[-which(x==0)]
+
+
+# De 12 a 18 meses:
+table(marga12 == marga18)
+x = 1*(marga12 != marga18)*1:209
+
+## Pacientes de cambio:
+p12_18.marga <- if(length(which(x==0)!=0)) x[-which(x==0)]
+
+
+# De 18 a 24 meses:
+table(marga18 == marga24)
+x = 1*(marga18 != marga24)*1:209
+
+## Pacientes de cambio:
+p18_24.marga <- if(length(which(x==0)!=0)) x[-which(x==0)]
+p18_24.marga[5] <- 99
+```
+
+
+**ANATF**
+
+```{r}
+#### verificación por Meses: ####
+
+# De 1 a 6 meses:
+table(anatf1 == anatf6)
+
+# De 6 a 12 meses:
+table(anatf6 == anatf12)
+x = 1*(anatf6 != anatf12)*1:209
+
+## Pacientes de cambio:
+p6_12.anatf <- if(length(which(x==0)!=0)) x[-which(x==0)]
+
+
+# De 12 a 18 meses:
+table(anatf12 == anatf18)
+x = 1*(anatf12 != anatf18)*1:209
+
+## Pacientes de cambio:
+p12_18.anatf <- if(length(which(x==0)!=0)) x[-which(x==0)]
+
+
+# De 18 a 24 meses:
+table(anatf18 == anatf24)
+x = 1*(anatf18 != anatf24)*1:209
+
+## Pacientes de cambio:
+p18_24.anatf <- if(length(which(x==0)!=0)) x[-which(x==0)]
+p18_24.anatf[4] <- 99
+```
+
+**CCM**
+
+```{r}
+#### verificación por Meses: ####
+
+# De 1 a 6 meses:
+table(ccm1 == ccm6)
+
+# De 6 a 12 meses:
+table(ccm6 == ccm12)
+x = 1*(ccm6 != ccm12)*1:209
+
+## Pacientes de cambio:
+p6_12.ccm <- if(length(which(x==0)!=0)) x[-which(x==0)]
+
+
+# De 12 a 18 meses:
+table(ccm12 == ccm18)
+x = 1*(ccm12 != ccm18)*1:209
+
+## Pacientes de cambio:
+p12_18.ccm <- if(length(which(x==0)!=0)) x[-which(x==0)]
+
+
+# De 18 a 24 meses:
+table(ccm18 == ccm24)
+x = 1*(ccm18 != ccm24)*1:209
+
+## Pacientes de cambio:
+p18_24.ccm <- if(length(which(x==0)!=0)) x[-which(x==0)]
+p18_24.ccm[4] <- 99
+```
+
+
+Ahora veamos los respectivos vectores creados:
+
+```{r}
+p.marga <- c(p6_12.marga,p12_18.marga,p18_24.marga) %>% unique() %>% sort()
+
+p.anatf <- c(p6_12.anatf,p12_18.anatf,p18_24.anatf) %>% unique() %>% sort()
+
+p.ccm <- c(p6_12.ccm,p12_18.ccm,p18_24.ccm) %>% unique() %>% sort()
+
+p.total <- c(p.marga,p.anatf,p.ccm) %>% unique() %>% sort()
+
+ptc <- as.character(p.total)
+
+#Ahora vemos que tipo de pacientes en que datos cambian:
+
+p6 <-  seis[p.total,] %>% as.matrix()
+
+dimnames(p6)[[1]] <- ptc
+
+p12 <- doce[p.total,] %>% as.matrix() 
+
+dimnames(p12)[[1]] <- ptc
+
+p18 <- diezocho[p.total,] %>% as.matrix() 
+
+dimnames(p18)[[1]] <- ptc
+
+p24 <- veinticuatro[p.total,] %>% as.matrix() 
+
+dimnames(p24)[[1]] <- ptc
+```
+
+una vez organizados los pacientes veamos en que variables cambian estos:
+
+```{r}
+# Coparación de 6 vs 12 meses
+colSums(p6 != p12)
+```
+
+Extraemos las columnas que tienen valores diferentes a cero:
+
+```{r}
+# Mes inicial
+p1 <- uno[p.total,
+          which(colSums(p18 != p24,
+                        na.rm = T) != 0)] %>% 
+  as.matrix()
+
+dimnames(p1)[[1]] <- ptc
+
+# 6 VS 12
+which(colSums(p6 != p12) != 0)
+
+# Guardamos la variables en sus respectivas matrices:
+pc6 <- p6[,which(colSums(p6 != p12) != 0)]
+
+# 12 VS 18
+which(colSums(p12 != p18) != 0)
+
+# Guardamos la variables en sus respectivas matrices:
+pc12 <- p12[,which(colSums(p12 != p18) != 0)]
+pc18 <- p18[,which(colSums(p12 != p18) != 0)]
+
+
+# 18 VS 24
+which(colSums(p18 != p24, na.rm = T) != 0)
+
+# Guardamos la variables en sus respectivas matrices:
+pc24 <- p24[,which(colSums(p18 != p24, na.rm = T) != 0)]
+```
+
+Comparaciones con meses diferentes:
+
+67. Adaptación marginal (MARGA):
+     + Bien adaptado = 1
+     
+     + Brecha en la hendidura marginal,
+       dentina no visible = 2
+       
+     + Restauración fracturada o perdida = 3
+
+68. Forma anatómica (ANATF):
+    + Restauración continua con
+      la anatomía del diente existente = 1
+      
+    + Restauración no continua
+      y necesita reemplazo = 2
+
+69. Caries en el margen de la cavo-superficie (CCM):
+    + No hay caries presente = 1
+    
+    + Caries presente = 2
+
+```{r}
+# Que variables cambian según los meses
+colnames(p1)
+colnames(pc6)
+colnames(pc12)
+colnames(pc18)
+colnames(pc24)
+```
+
+Creamos una matriz que nos muestre el cambio de los sujetos por variables, es decir un time lapse de la evolución del paciente en los 24 meses.
+
+```{r}
+# Marga 1
+time.marga1 <- cbind(p1[,1],pc6[,1],
+                    pc12[,1],pc18[,1],pc24[,1])
+
+dimnames(time.marga1)[[2]] <- paste0("Mes-", n)
+
+
+# Marga 2
+i =2
+time.marga2 <- cbind(p1[,i],pc6[,i],
+                    pc12[,i],pc18[,i],pc24[,i])
+
+dimnames(time.marga2)[[2]] <- paste0("Mes-", n)
+
+
+# Marga 3
+i =3
+time.marga3 <- cbind(p1[,i],
+                    pc12[,i],pc18[,i],pc24[,i])
+
+dimnames(time.marga3)[[2]] <- paste0("Mes-", n[-2])
+
+
+# NO COMPARAR CON EL MES 6
+
+# anatf61
+i =4
+time.anatf61 <- cbind(p1[,4],pc6[,3])
+
+dimnames(time.anatf61)[[2]] <- paste0("Mes-", c(1,6))
+```
+
+
+
+
+
+
