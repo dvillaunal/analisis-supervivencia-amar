@@ -114,9 +114,7 @@ paso.cox <- stepwiseCox(formula,
 paso.cox$Coefficients
 ```
 
-
 Al ver que nuestro mejor modelo para explicar las caries es con las covariables TREAT & MARGA, entonces vemos que:
-
 
 ```{r, warning=FALSE, message=FALSE}
 fit2 <- coxph(Surv(time_ccm,ccm)~treat+marga,
@@ -127,15 +125,14 @@ fit2
 
 El hazard rate asociado con el factor (columna `exp(coef)`) es mayor que 1 (en el caso de `treat`) lo que indica que el ART tienen más supervivencia que los pacientes con AMALGAM; para el caso de `marga2` este representa una mayor supervivencia con el dato del factor siguiente, es decir, el valor #3.
 
-
-Ahora los valores P muestran la poca significancia del modelo, pero esto no es relevante dado a que necesitamos es evaluar si el test de bondad y ajuste del modelo (“likelihood ratio test”) resulta significativo indicando que el tratamiento y la adaptación marginal contribuyen claramente a explicar la supervivencia de los sujetos del estudio.
-
+Ahora los valores P muestran la poca significancia del modelo, pero esto no es relevante dado a que necesitamos es evaluar si el test de bondad y ajuste del modelo ("likelihood ratio test") resulta significativo indicando que el tratamiento y la adaptación marginal contribuyen claramente a explicar la supervivencia de los sujetos del estudio.
 
 Probamos supuestos del modelo:
 
 ```{r}
 cox.zph(fit2)
 ```
+
 Dado que el pvalor asociado del test resulta significativo podemos descartar a modo global la hipótesis de riesgos proporcionales asociados con la variable treat.
 
 ```{r, message=FALSE, warning=FALSE}
@@ -143,9 +140,7 @@ ggcoxdiagnostics(fit2, type = "deviance",
                  linear.predictions = FALSE)
 ```
 
-
 Como podemos ver hay datos salidos tales como el 52 o 56, pero estos datos no se pueden imputar por la relevancia del cambio en los datos para el modelo.
-
 
 ```{r}
 ggadjustedcurves(fit2, data=na.omit(data.model2), 
@@ -153,14 +148,10 @@ ggadjustedcurves(fit2, data=na.omit(data.model2),
                  palette = "grey",ylim = c(0.93,1), ggtheme = theme_bw())
 ```
 
-
 Observando la curva podemos ver como afecta un poco la supervivencia más que todo del ART al punto de tener valores cruzados con los del AMALGAMA.
-
 
 # Conclusiones
 
 El modelo COX no cumplió con lo esperado, pero no fue malo del todo, llevando a una conclusión algo obvia y es que hay mayor supervivencia si la adaptación marginal esta bien hecha, por lo cual se descarta la variable y volvemos al modelo inicial el cual nos arroja que la supervivencia en términos de efectividad se la lleva casi por el doble el ART teniendo tasas, pero esto depende a su vez de los cuidados futuros y el desarrollo clínico en la cita del paciente.
 
-
 El modelo Kaplan es mucho mejor a pesar de no tener el registro de la mediana.
-

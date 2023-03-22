@@ -1,0 +1,190 @@
+---
+title: "Survival model"
+author: "Daniel Villa"
+format: docx
+lang: es
+editor: visual
+execute: 
+  warning: false
+  cache: true
+tbl-colwidths: auto
+link-external-newwindow: true
+editor_options: 
+  chunk_output_type: console
+---
+
+# Contexto de la Base de datos:
+
+*(Línea de base, 6, 12, 18 y 24 meses de seguimiento)* **Conteos discretos**
+
+59. Tratamiento (TREAT): ART = 1 Amalgama = 2
+
+60. Número de diente (sistema internacional de numeración de dientes) (TOTNO): 54 = 1-A 55 = 2-B 64 = 3-I 65 = 4-J 74 = 5-K 75 = 6-L 84 = 7-S 85 = 8-T
+
+61. Tipo de mandíbula (TYOJ): Maxilar = 1 Mandíbula = 2
+
+62. Profundidad de la lesión dental (TLD): Tercio medio de la dentina = 1 Tercio interno de la dentina = 2 Tercio externo de la dentina = 3
+
+63. Tipo de restauración (RESTT): Oclusal = 1 Mesio-oclusal = 2 Disto-oclusal = 3 Mesial = 4 Distal = 5 Mesio-oclusal-distal = 6 Oclusal-lingual = 7 Oclusal-bucal = 8 Bucal= 9 Oclusal-lingual-distal = 10 Mesio-oclusal- bucal = 11
+
+64. Experiencia de sensibilidad (SENSE) (Caras Wong- Baker): Cara 0 = 1 Cara 1 = 2 Cara 2 = 3 Cara 3 = 4 Cara 4 = 5 Cara 5 = 6
+
+65. Radiografía (RX): Sí = 1 No = 2
+
+66. Adaptación marginal (MARGA): Bien adaptado = 1 Brecha en la hendidura marginal, dentina no visible = 2 Restauración fracturada o perdida = 3
+
+67. Forma anatómica (ANATF): Restauración continua con la anatomía del diente existente = 1 Restauración no continua y necesita reemplazo = 2
+
+68. Caries en el margen de la cavosuperficie (CCM): No hay caries presente = 1 Caries presente = 2
+
+Este Documento tiene la finalidad de Organizar, limpiar las BD de AMAR, además proponer un modelo de supervivencia para poner en términos estadísticos la supervivencia de los ciclos de vida de la Amalgama vs ART.
+
+```{r,message=FALSE, warning=FALSE, include=FALSE}
+# Librerías Necesarias:
+library(survminer)
+library(survival)
+library(tidyverse)
+library(magrittr)
+library(ggalt)
+library(openxlsx)
+library(ggfortify)
+library(kableExtra)
+library(knitr)
+library(xtable)
+library(StepReg)
+library(biostat3)
+library(radiant)
+# data-base loading
+load("data_model.RData")
+data.model2 %<>% as_tibble()
+rm(data.model)
+```
+
+# Descriptivas de la base de datos:
+
+Antes de iniciar con el modelo de supervivencia se realizarán algunas tablas relevantes que darán más entendimiento de los datos trabajados.
+
+Ya que se desea evaluar si el ART representa un cambio significativo frente el tratamiento tradicional (Amalgama) por lo cual esto se contestará con la variable `ccm` que nos muestra si el paciente en el estudio realizado (de 0-24 meses) presento caries en donde se le aplico el tratamiento; con esto se puede evaluar la calidad entre la amalgama y el ART ya que si un paciente muestra caries alrededor, interior o en algún borde del diente este demostrará que el tratamiento en cuestión fallo.
+
+# Tabla de vida
+
+```{r, fig.align='center', echo=FALSE}
+# attach(data.model2)
+# lifetab2(Surv(time_ccm, ccm) ~ 1,
+#          data.model2, breaks = c(0,6,12,18,24)) %>%
+#   kable(., booktabs = T, digits = 6, format = "latex",
+#         longtable = TRUE,
+#         caption = "tabla de vida sin discriminar por tratamiento") %>%
+#   kable_styling(font_size = 7)
+```
+
+```{=tex}
+\begingroup\fontsize{7}{9}\selectfont
+
+\begin{longtable}[t]{lrrrrrrrrrrrr}
+\caption{tabla de vida sin discriminar por tratamiento}\\
+\toprule
+  & tstart & tstop & nsubs & nlost & nrisk & nevent & surv & pdf & hazard & se.surv & se.pdf & se.hazard\\
+\midrule
+0-6 & 0 & 6 & 209 & 0 & 209.0 & 0 & 1.000000 & 0.000000 & 0.000000 & 0.000000 & NaN & NaN\\
+6-12 & 6 & 12 & 209 & 0 & 209.0 & 0 & 1.000000 & 0.000000 & 0.000000 & 0.000000 & NaN & NaN\\
+12-18 & 12 & 18 & 209 & 0 & 209.0 & 1 & 1.000000 & 0.000797 & 0.000799 & 0.000000 & 0.000796 & 0.000799\\
+18-24 & 18 & 24 & 208 & 0 & 208.0 & 1 & 0.995215 & 0.000797 & 0.000803 & 0.004773 & 0.000796 & 0.000803\\
+24-Inf & 24 & Inf & 207 & 203 & 105.5 & 4 & 0.990431 & NA & NA & 0.006734 & NA & NA\\
+\bottomrule
+\end{longtable}
+\endgroup{}
+```
+Aquí podemos ver una tabla descriptiva llamada "tabla de vida" la cual nos indica la supervivencia y el riesgo presentado por cada ciclo de 6 meses, en el cual se puede notar la cantidad de censura presentado en los datos por lo cual la supervivencia siempre encuentra valores muy cercanos a $1$ y por ende el riesgo es "nulo"; esto se nota en la cantidad de sujetos que presentaron caries a lo largo del tiempo siendo el mes $24$ el mayor registro de cambio de estado de los sujetos.
+
+A continuación se muestra una tabla del no. de eventos ocurridos por tipo de tratamiento y el mes donde el sujeto comente un falla.
+
+```{r, echo=FALSE}
+result <- pivotr(
+  data.model2, 
+  cvars = c("treat", "time_ccm"), 
+  nvar = "ccm", 
+  fun = "sum", 
+  nr = Inf
+)
+
+# summary()
+result$tab_freq
+```
+
+```{=tex}
+\begin{table}[ht]
+\centering
+\begin{tabular}{rlrrr}
+  \hline
+ & time\_ccm & ART & AMALGAM & Total \\ 
+  \hline
+1 & 12 &  & 1.00 & 1.00 \\ 
+  2 & 18 &  & 1.00 & 1.00 \\ 
+  3 & 24 & 2.00 & 2.00 & 4.00 \\ 
+  4 & Total & 2.00 & 4.00 & 6.00 \\ 
+   \hline
+\end{tabular}
+\end{table}
+```
+
+Como podemos ver no hay datos anteriores a los 12 meses lo cual presenta censura en ese mes, además de que el tratamiento del ART solo presenta dos fallas en el mes número 24.
+
+(Para el caso de la variable `anatf` son similares y por ende se omitieron)
+
+# Modelo de supervivencia:
+
+Se creará un modelo Kaplan-Meier:
+
+> Nota: Este modelo se ajusto con las variables de `CCM` (Presencia de Caries) y `TREAT` (tipo de tratamiento).
+
+```{r, echo=FALSE}
+# Ajuste del modelo Kaplan:
+fit <- survfit(Surv(time_ccm, ccm) ~ treat, data = data.model2)
+summary(fit)
+```
+
+```{=tex}
+\begin{table}[ht]
+\centering
+\begin{tabular}{rrrrrrrrrl}
+  \hline
+ & time & n.risk & n.event & n.censor & surv & std.err & upper & lower & strata \\ 
+  \hline
+1 & 24.00 & 98.00 & 2.00 & 96.00 & 0.98 & 0.01 & 1.00 & 0.95 & ART \\ 
+  2 & 12.00 & 111.00 & 1.00 & 0.00 & 0.99 & 0.01 & 1.00 & 0.97 & AMALGAM \\ 
+  3 & 18.00 & 110.00 & 1.00 & 0.00 & 0.98 & 0.01 & 1.00 & 0.96 & AMALGAM \\ 
+  4 & 24.00 & 109.00 & 2.00 & 107.00 & 0.96 & 0.02 & 1.00 & 0.93 & AMALGAM \\ 
+   \hline
+\end{tabular}
+\end{table}
+```
+En este resumen se presenta un modelo de dos curvas con sus respectivos eventos, el cual muestra una alta tasa de censura hacia la derecha debido a la posibilidad de falla después del tiempo del experimento. Para abordar este problema, se ajustará un modelo COX para evaluar si la presencia de otras variables afecta significativamente los resultados.
+
+En cuanto a la curva del tratamiento ART, solo presenta dos eventos, lo que indica una tasa de supervivencia muy alta. De hecho, su intervalo de confianza del 95% en su límite superior alcanza valores muy cercanos a 1, lo que sugiere que después de 2 años los usuarios del ART no presentarían caries en condiciones iguales a la base del modelo. Para el caso de la AMALGAMA, aunque se presentan más casos de caries en diferentes periodos de tiempo desde los 12 meses a los 24 meses, la tasa de supervivencia también es alta debido a la poca cantidad de datos de pacientes que pasaron de un estado sano a presentar caries en los dientes intervenidos.
+
+En resumen, las curvas de supervivencia de ambos tratamientos son casi lineales debido a la efectividad de los mismos. Sin embargo, si se busca un tratamiento que brinde mayor seguridad a los pacientes, se debería optar por el ART, ya que los casos de falla representan solo el 0.02% de la población tratada, en comparación con la AMALGAMA, que presenta el doble de casos. En términos más simples, por cada 10 pacientes tratados con ART, solo uno tendría caries, mientras que con AMALGAMA serían al menos dos pacientes.
+
+```{r, echo=FALSE}
+ggsurvplot(fit,data = data.model2,
+           ylim = c(0.93,1),palette = "grey", ggtheme = theme_bw())+
+  labs(title = "Curva de Supervivencia Kaplan-Meier",
+       subtitle = "Por tipo de tratamiento")+
+  xlab("Tiempo (en meses)")+ylab("Probabilidad de supervivencia")
+```
+
+Además, se menciona otro efecto no medido, que es la mediana del modelo, la cual no cumple con las condiciones debido a la forma de la "curva". Como resultado, los valores aproximados son infinitos, lo que refuerza la necesidad de tener un modelo con covariables para tener en cuenta y controlar las variables exógenas que puedan afectar los resultados.
+
+*se omitirá el modelo con la variable* `anatf` *por presentar valores similares a los* `ccm`.
+
+> Nota: Se ajustó un modelo Cox en el cual se observaron valores similares en la supervivencia y ningun cambio singinificativo a la hora de dar una conclusión por lo cual teniendo en cuenta el metodo de parsimonia se toma el modelo de Kaplan-Meier
+
+El modelo COX no alcanzó los resultados esperados, aunque aún así proporcionó una conclusión útil y es que la supervivencia es mayor cuando la adaptación marginal está bien hecha, lo que lleva a descartar la variable y volver al modelo inicial.
+
+Los resultados muestran que la supervivencia del tratamiento ART es casi el doble que la de la AMALGAMA en términos de efectividad. Sin embargo, es importante tener en cuenta que esto depende del cuidado futuro y el desarrollo clínico del paciente en las citas posteriores.
+
+En general, se puede concluir que el tratamiento ART es una opción más efectiva para la prevención de caries en comparación con la AMALGAMA, aunque se necesita más investigación para evaluar los efectos a largo plazo y los factores que pueden influir en los resultados.
+
+```{r, echo=FALSE, include=FALSE, eval=FALSE}
+knitr::purl("survival_model.qmd", "code_model.R")
+```
