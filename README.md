@@ -12,7 +12,9 @@ Organizar y limpiar la base de datos del estudio AMAR y evaluar estadísticament
 
 ## Datos
 
-- `AMAR-DataBase-3-2021 .xlsx`: base original del estudio, incluida en el repositorio. Tiene 209 participantes identificados con un código numérico y estas hojas:
+> **Los datos no están en el repositorio.** Son datos de salud de niños de un estudio de terceros (fechas de visita, clínica y características socioeconómicas), así que se retiraron del repositorio y de su historial para proteger a los participantes. El código, los informes renderizados y el libro de códigos sí están.
+
+- `AMAR-DataBase-3-2021 .xlsx` (no publicado): base original del estudio, con 209 participantes identificados con un código numérico y estas hojas:
   - `Demographics`: respuestas del cuestionario sociodemográfico y de salud oral, codificadas en 599 columnas indicadoras (sexo, etnia, idioma, edad en años, seguro, hábitos de higiene, etc.).
   - `Baseline data`, `6months`, `12months`, `18months` y `24 months`: evaluación clínica de cada restauración en cada visita.
 - `AMAR-CODES(2021)-1.pdf` / `.docx`: libro de códigos del cuestionario y de la evaluación clínica.
@@ -30,7 +32,7 @@ Organizar y limpiar la base de datos del estudio AMAR y evaluar estadísticament
   | `anatf` | forma anatómica |
   | `ccm` | caries en el margen de la cavosuperficie |
 
-- `DataForModel.xlsx` y `data_model.RData`: base procesada con un registro por participante (P-1 a P-209), con el indicador de evento y el tiempo hasta el evento o la censura para `ccm` y `anatf`. `table1_ALL.RData` contiene las características basales en formato ordenado.
+- `DataForModel.xlsx` y `data_model.RData` (no publicados): base procesada con un registro por participante (P-1 a P-209), con el indicador de evento y el tiempo hasta el evento o la censura para `ccm` y `anatf`. `table1_ALL.RData` contiene las características basales en formato ordenado.
 - Grupos: 98 restauraciones con ART y 111 con amalgama.
 
 ## Métodos
@@ -66,12 +68,10 @@ Organizar y limpiar la base de datos del estudio AMAR y evaluar estadísticament
 ├── tabla1_prop.Rmd (+ .html, .nb.html, .pdf)  # Tabla 1 de características basales y pruebas chi-cuadrado
 ├── model.R, code_model.R                      # Scripts del ajuste (code_model.R se extrajo de survival_model.qmd)
 ├── Análisis Estadístico.docx, Statistical Analyis.docx   # Resumen de resultados en español e inglés
-├── AMAR-DataBase-3-2021 .xlsx                 # Base original del estudio
 ├── AMAR-CODES(2021)-1.pdf, .docx              # Libro de códigos
-├── DataForModel.xlsx, data_model.RData, table1_ALL.RData # Bases procesadas
 ├── SurvKM.png                                 # Curvas de Kaplan-Meier
 ├── papers/                                    # Artículos de referencia sobre ART y restauraciones en dientes temporales
-├── *_cache/, *_files/                         # Caché y figuras generadas por Quarto y knitr
+├── *_files/                                   # Figuras generadas por Quarto y knitr
 └── survminer_0.4.9.zip                        # Copia local del paquete survminer
 ```
 
@@ -84,9 +84,10 @@ Organizar y limpiar la base de datos del estudio AMAR y evaluar estadísticament
   2. `tabla1_prop.Rmd` produce la tabla de características basales.
   3. `survival_model.qmd` o `modelos_de_supervivencia.qmd` ajustan los modelos.
 
-  Los informes cargan `data_model.RData`, así que pueden renderizarse directamente:
+  Para ejecutarlos se necesita la base original del estudio AMAR, que no se publica. Con ella en la raíz del proyecto:
 
 ```bash
+quarto render data_for_model.qmd   # crea data_model.RData
 quarto render survival_model.qmd
 ```
 
